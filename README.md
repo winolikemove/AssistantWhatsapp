@@ -2,7 +2,9 @@
 
 WhatsApp AI Assistant dengan fitur keuangan pribadi dan sistem penjualan terintegrasi.
 
-## Fitur
+> **📖 [Baca Tutorial Lengkap](TUTORIAL.md)** - Panduan step-by-step untuk pemula
+
+## ✨ Fitur
 
 ### 💰 Keuangan Pribadi
 - Catat pengeluaran/pemasukan dengan bahasa natural
@@ -23,32 +25,89 @@ WhatsApp AI Assistant dengan fitur keuangan pribadi dan sistem penjualan terinte
 - Parsing tanggal/waktu natural
 - Auto-complete dari chat
 
-## Setup
+## 🚀 Quick Start
 
-### 1. Prerequisites
-- Go 1.25.5+
-- Google Cloud Project dengan Sheets API enabled
-- Service Account credentials
-- OpenAI API key atau compatible LLM
+### Prerequisites
+- Go 1.21+
+- Google Cloud Project dengan Sheets API
+- LLM API Key (OpenAI/OpenRouter)
 
-### 2. Configuration
+### Install & Run
+
 ```bash
+# Clone repository
+git clone https://github.com/winolikemove/AssistantWhatsapp.git
+cd AssistantWhatsapp
+
+# Copy environment template
 cp .env.example .env
-# Edit .env sesuai kebutuhan
-```
 
-### 3. Google Sheets Setup
-1. Buat Google Spreadsheet baru
-2. Share spreadsheet ke Service Account email
-3. Copy Spreadsheet ID ke `SHEETS_SPREADSHEET_ID`
+# Edit .env dengan konfigurasi Anda
+# Lihat TUTORIAL.md untuk panduan lengkap
 
-### 4. Run
-```bash
+# Download dependencies
 go mod tidy
+
+# Run
 go run ./cmd/bot
 ```
 
-## Commands
+### Scan QR Code
+Buka WhatsApp di HP → Linked devices → Link a device → Scan QR
+
+## 📱 Contoh Penggunaan
+
+### Keuangan
+```
+beli makan 25k          # Catat pengeluaran
+gaji 5jt               # Catat pemasukan
+laporan bulan ini      # Lihat laporan
+```
+
+### Penjualan
+```
+tambah item aussie bbq 15000 kg              # Tambah item
+tambah customer ambrogio jakarta 14 hari     # Tambah customer
+set harga aussie bbq untuk ambrogio 18000    # Set harga
+jual aussie bbq 50 kg ke ambrogio            # Catat penjualan
+```
+
+### Laporan
+```
+laporan profit         # Laporan keuntungan
+piutang                # Daftar piutang
+hutang                 # Daftar hutang supplier
+```
+
+### Reminder
+```
+ingetin tanggal 25 bayar listrik    # Buat reminder
+/done RMD-xxx                       # Tandai selesai
+```
+
+## ⚙️ Konfigurasi
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `LLM_API_KEY` | ✅ | API key LLM |
+| `LLM_BASE_URL` | ✅ | Base URL API |
+| `LLM_MODEL` | ✅ | Model name |
+| `GOOGLE_APPLICATION_CREDENTIALS` | ✅ | Path credentials.json |
+| `SHEETS_SPREADSHEET_ID` | ✅ | Spreadsheet ID |
+| `WHATSAPP_SESSION_DB_PATH` | ✅ | Path session.db |
+| `OWNER_PHONE_NUMBER` | ✅ | Nomor WhatsApp owner |
+| `SUPPLIER_NAME` | ❌ | Nama supplier |
+| `SUPPLIER_PAY_DAY` | ❌ | Tanggal bayar supplier (default: 25) |
+| `REMINDER_TIME` | ❌ | Waktu reminder (default: 08:00) |
+| `WA_REMINDER_TO_CUSTOMER` | ❌ | Kirim reminder ke customer |
+
+## 📚 Dokumentasi
+
+- **[Tutorial Lengkap](TUTORIAL.md)** - Panduan step-by-step untuk pemula
+- **[Troubleshooting](TUTORIAL.md#10-troubleshooting)** - Solusi masalah umum
+- **[FAQ](TUTORIAL.md#11-faq)** - Pertanyaan yang sering diajukan
+
+## 🔧 Commands
 
 | Command | Description |
 |---------|-------------|
@@ -62,46 +121,10 @@ go run ./cmd/bot
 | `/done [id]` | Tandai selesai |
 | `/export` | Link Google Sheets |
 
-## Contoh Penggunaan
+## 🤝 Kontribusi
 
-### Keuangan
-```
-beli makan 25k
-gaji 5jt
-bayar listrik 150rb
-```
+Pull requests welcome! Untuk perubahan besar, buka issue dulu.
 
-### Penjualan
-```
-tambah item aussie bbq 15000 kg
-tambah customer ambrogio jakarta 14 hari credit
-set harga aussie bbq untuk ambrogio 18000
-jual aussie bbq 50 kg ke ambrogio
-```
-
-### Laporan
-```
-laporan profit bulan ini
-piutang
-hutang
-```
-
-## Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `LLM_API_KEY` | Yes | API key untuk LLM |
-| `LLM_BASE_URL` | Yes | Base URL LLM API |
-| `LLM_MODEL` | Yes | Model name (e.g., gpt-4o-mini) |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Yes | Path ke credentials.json |
-| `SHEETS_SPREADSHEET_ID` | Yes | Google Spreadsheet ID |
-| `WHATSAPP_SESSION_DB_PATH` | Yes | Path untuk session database |
-| `OWNER_PHONE_NUMBER` | Yes | Nomor WhatsApp owner (digits only) |
-| `SUPPLIER_NAME` | No | Nama supplier (default: Toko Supplier) |
-| `SUPPLIER_PAY_DAY` | No | Tanggal bayar supplier (default: 25) |
-| `REMINDER_TIME` | No | Waktu reminder (default: 08:00) |
-| `WA_REMINDER_TO_CUSTOMER` | No | Kirim reminder ke customer (default: false) |
-
-## License
+## 📄 License
 
 MIT
