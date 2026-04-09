@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: whatsapp-ai-assistant
+    restart: unless-stopped
+    environment:
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.openai.com/v1}
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+      - SHEETS_SPREADSHEET_ID=${SHEETS_SPREADSHEET_ID}
+      - OWNER_PHONE_NUMBER=${OWNER_PHONE_NUMBER}
+      - SUPPLIER_NAME=${SUPPLIER_NAME:-Supplier}
+      - SUPPLIER_PAY_DAY=${SUPPLIER_PAY_DAY:-25}
+      - REMINDER_TIME=${REMINDER_TIME:-08:00}
+      - WA_REMINDER_TO_CUSTOMER=${WA_REMINDER_TO_CUSTOMER:-false}
+      - GOOGLE_CREDENTIALS_BASE64=${GOOGLE_CREDENTIALS_BASE64:-}
+    volumes:
+      - ./session:/app/session
+      - ./credentials:/app/credentials
+    stdin_open: true
+    tty: true

@@ -2,6 +2,7 @@ package main
 
 import (
         "context"
+        "encoding/base64"
         "fmt"
         "log"
         "os"
@@ -39,6 +40,18 @@ func verifyLLMConnectivity(ctx context.Context, llmClient *ai.LLMClient) error {
 }
 
 func main() {
+        // 0) Setup credentials from base64 (for cloud deployment)
+        if credsBase64 := os.Getenv("GOOGLE_CREDENTIALS_BASE64"); credsBase64 != "" {
+                credsJSON, err := base64.StdEncoding.DecodeString(credsBase64)
+                if err != nil {
+                        log.Fatalf("❌ Failed to decode GOOGLE_CREDENTIALS_BASE64: %v", err)
+                }
+                if err := os.WriteFile("credentials.json", credsJSON, 0644); err != nil {
+                        log.Fatalf("❌ Failed to write credentials.json: %v", err)
+                }
+                log.Println("✅ Google credentials loaded from environment")
+        }
+
         // 1) Load config
         cfg, err := config.Load()
         if err != nil {

@@ -3,6 +3,7 @@
 WhatsApp AI Assistant dengan fitur keuangan pribadi dan sistem penjualan terintegrasi.
 
 > **📖 [Baca Tutorial Lengkap](TUTORIAL.md)** - Panduan step-by-step untuk pemula
+> **🚀 [Panduan Deployment](DEPLOYMENT.md)** - Cara deploy ke HP (Termux) atau cloud gratis
 
 ## ✨ Fitur
 
@@ -54,6 +55,26 @@ go run ./cmd/bot
 
 ### Scan QR Code
 Buka WhatsApp di HP → Linked devices → Link a device → Scan QR
+
+## 📱 Deployment
+
+### Di HP Android (Termux) - GRATIS
+```bash
+# Install Termux dari F-Droid
+pkg install golang git
+git clone https://github.com/winolikemove/AssistantWhatsapp.git
+cd AssistantWhatsapp
+go mod tidy
+go run ./cmd/bot
+```
+
+### Di Cloud Gratis
+- **Railway.app** - Paling mudah, $5 credit/bulan
+- **Render.com** - 750 jam/bulan gratis
+- **Fly.io** - 3 VM gratis
+- **Oracle Cloud** - Always free, paling powerful
+
+> Lihat [DEPLOYMENT.md](DEPLOYMENT.md) untuk panduan lengkap
 
 ## 📱 Contoh Penggunaan
 
