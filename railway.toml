@@ -1,0 +1,7 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Railway will automatically configure volumes through dashboard
+# Add a volume with mount path /app/session for WhatsApp session persistence

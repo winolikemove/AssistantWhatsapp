@@ -122,38 +122,32 @@ go run ./cmd/bot
 
 4. **Set Environment Variables:**
 ```
-OWNER_NUMBER=6281234567890
-LLM_PROVIDER=openai
-OPENAI_API_KEY=sk-your-api-key
-OPENAI_MODEL=gpt-4o-mini
+LLM_API_KEY=AIzaSy-your-gemini-api-key
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+LLM_MODEL=gemini-2.0-flash
+SHEETS_SPREADSHEET_ID=your-spreadsheet-id
+OWNER_PHONE_NUMBER=6281234567890
+GOOGLE_CREDENTIALS_BASE64=<base64-encoded-credentials>
 ```
 
-5. **Upload credentials.json:**
-   - Railway tidak mendukung file upload langsung
-   - Solusi: Encode ke base64 dan simpan di env var
-
+5. **Encode credentials.json ke base64:**
 ```bash
-# Di komputer lokal, encode credentials
+# Linux/Mac
 base64 -i credentials.json
 
-# Copy hasilnya ke env var:
-GOOGLE_CREDENTIALS_BASE64=<hasil-base64>
+# Windows (PowerShell)
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("credentials.json"))
+
+# Copy hasilnya ke env var GOOGLE_CREDENTIALS_BASE64
 ```
 
-6. **Modifikasi main.go** untuk membaca dari env:
-```go
-// Tambahkan kode ini di awal main()
-if credsBase64 := os.Getenv("GOOGLE_CREDENTIALS_BASE64"); credsBase64 != "" {
-    credsJSON, err := base64.StdEncoding.DecodeString(credsBase64)
-    if err != nil {
-        log.Fatalf("Failed to decode credentials: %v", err)
-    }
-    err = os.WriteFile("credentials/credentials.json", credsJSON, 0644)
-    if err != nil {
-        log.Fatalf("Failed to write credentials: %v", err)
-    }
-}
-```
+6. **Tambah Railway Volume untuk session WhatsApp:**
+   - Di Railway dashboard, klik project Anda
+   - Klik **"+ Add Service"** → **"Volume"**
+   - Set **Mount Path**: `/app/session`
+   - Volume ini akan menyimpan session WhatsApp agar tidak perlu scan QR ulang
+
+7. **Redeploy** setelah menambah volume
 
 ### B. Render.com ⭐⭐⭐⭐
 

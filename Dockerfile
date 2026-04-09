@@ -34,8 +34,5 @@ RUN mkdir -p /app/session /app/credentials
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/credentials.json
 ENV WHATSAPP_SESSION_DB_PATH=/app/session/session.db
 
-# Volume for persistent data
-VOLUME ["/app/session", "/app/credentials"]
-
 # Run the bot
 CMD ["./bot"]
