@@ -21,6 +21,7 @@ import (
         "github.com/winolikemove/AssistantWhatsapp/internal/sales"
         "github.com/winolikemove/AssistantWhatsapp/internal/sheets"
         "github.com/winolikemove/AssistantWhatsapp/internal/whatsapp"
+        "go.mau.fi/whatsmeow"
         waLog "go.mau.fi/whatsmeow/util/log"
 )
 
@@ -59,13 +60,31 @@ func main() {
         }
         log.Println("✅ Config loaded")
 
-        // 2) Connect WhatsApp
+        // 2) Connect WhatsApp with configured login method
         waLogger := waLog.Stdout("WhatsApp", "INFO", true)
-        client, err := whatsapp.Connect(cfg.WASessionDBPath, waLogger)
+
+        var client *whatsmeow.Client
+        if strings.ToLower(cfg.WALoginMethod) == "pairing_code" && cfg.WABotNumber != "" {
+                // Use pairing code authentication
+                log.Println("📱 Using Pairing Code authentication...")
+                loginOpts := whatsapp.LoginOptions{
+                        Method:      whatsapp.LoginMethodPairingCode,
+                        PhoneNumber: cfg.WABotNumber,
+                }
+                client, err = whatsapp.ConnectWithOptions(cfg.WASessionDBPath, waLogger, loginOpts)
+        } else {
+                // Default: QR code authentication
+                client, err = whatsapp.Connect(cfg.WASessionDBPath, waLogger)
+        }
         if err != nil {
                 log.Fatalf("❌ WhatsApp connection error: %v", err)
         }
         log.Println("✅ WhatsApp connected")
+
+        // Show anti-ban info
+        log.Println("🛡️  Anti-ban features enabled:")
+        log.Println("   - Human-like delay: 1-4 seconds before reply")
+        log.Println("   - Typing presence: 3-7 seconds")
 
         // 3) Initialize Google Sheets repository
         repo, err := sheets.NewGoogleSheetRepository(cfg.GoogleCredsPath, cfg.SheetsID)
