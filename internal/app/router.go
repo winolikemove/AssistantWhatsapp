@@ -1,23 +1,23 @@
 package app
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"math"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
+        "context"
+        "encoding/json"
+        "fmt"
+        "math"
+        "strconv"
+        "strings"
+        "sync"
+        "time"
 
-	"github.com/verssache/AssistantWhatsapp/internal/ai"
-	"github.com/verssache/AssistantWhatsapp/internal/commands"
-	"github.com/verssache/AssistantWhatsapp/internal/finance"
-	"github.com/verssache/AssistantWhatsapp/internal/notes"
-	"github.com/verssache/AssistantWhatsapp/internal/reminder"
-	"github.com/verssache/AssistantWhatsapp/internal/sales"
-	"github.com/verssache/AssistantWhatsapp/internal/sheets"
-	"github.com/verssache/AssistantWhatsapp/pkg/formatter"
+        "github.com/winolikemove/AssistantWhatsapp/internal/ai"
+        "github.com/winolikemove/AssistantWhatsapp/internal/commands"
+        "github.com/winolikemove/AssistantWhatsapp/internal/finance"
+        "github.com/winolikemove/AssistantWhatsapp/internal/notes"
+        "github.com/winolikemove/AssistantWhatsapp/internal/reminder"
+        "github.com/winolikemove/AssistantWhatsapp/internal/sales"
+        "github.com/winolikemove/AssistantWhatsapp/internal/sheets"
+        "github.com/winolikemove/AssistantWhatsapp/pkg/formatter"
 )
 
 const defaultPendingTTL = 5 * time.Minute
@@ -65,782 +65,782 @@ CONTOH PENJUALAN:
 - "hutang" -> gunakan get_payable_summary`
 
 type PendingAction struct {
-	Transaction *ai.RecordTransactionArgs
-	CreatedAt   time.Time
+        Transaction *ai.RecordTransactionArgs
+        CreatedAt   time.Time
 }
 
 type transactionExecResult struct {
-	ID          string
-	Description string
-	Category    string
-	Amount      float64
-	IsIncome    bool
-	When        time.Time
+        ID          string
+        Description string
+        Category    string
+        Amount      float64
+        IsIncome    bool
+        When        time.Time
 }
 
 type AppRouter struct {
-	cmdRouter       *commands.Router
-	llmClient       *ai.LLMClient
-	financeService  *finance.FinanceService
-	notesService    *notes.NotesService
-	reminderService *reminder.Service
-	salesService    *sales.Service
+        cmdRouter       *commands.Router
+        llmClient       *ai.LLMClient
+        financeService  *finance.FinanceService
+        notesService    *notes.NotesService
+        reminderService *reminder.Service
+        salesService    *sales.Service
 
-	pendingActions sync.Map // map[string]*PendingAction
-	pendingTTL     time.Duration
-	systemPrompt   string
+        pendingActions sync.Map // map[string]*PendingAction
+        pendingTTL     time.Duration
+        systemPrompt   string
 }
 
 func NewAppRouter(
-	cmdRouter *commands.Router,
-	llmClient *ai.LLMClient,
-	financeService *finance.FinanceService,
-	notesService *notes.NotesService,
-	reminderService ...*reminder.Service,
+        cmdRouter *commands.Router,
+        llmClient *ai.LLMClient,
+        financeService *finance.FinanceService,
+        notesService *notes.NotesService,
+        reminderService ...*reminder.Service,
 ) *AppRouter {
-	var remSvc *reminder.Service
-	if len(reminderService) > 0 {
-		remSvc = reminderService[0]
-	}
+        var remSvc *reminder.Service
+        if len(reminderService) > 0 {
+                remSvc = reminderService[0]
+        }
 
-	return &AppRouter{
-		cmdRouter:       cmdRouter,
-		llmClient:       llmClient,
-		financeService:  financeService,
-		notesService:    notesService,
-		reminderService: remSvc,
-		pendingTTL:      defaultPendingTTL,
-		systemPrompt:    defaultSystemPrompt,
-	}
+        return &AppRouter{
+                cmdRouter:       cmdRouter,
+                llmClient:       llmClient,
+                financeService:  financeService,
+                notesService:    notesService,
+                reminderService: remSvc,
+                pendingTTL:      defaultPendingTTL,
+                systemPrompt:    defaultSystemPrompt,
+        }
 }
 
 // WithSalesService adds sales service to the router
 func (r *AppRouter) WithSalesService(svc *sales.Service) *AppRouter {
-	if r != nil {
-		r.salesService = svc
-	}
-	return r
+        if r != nil {
+                r.salesService = svc
+        }
+        return r
 }
 
 // NewAppRouterWithSales creates a new router with all services including sales
 func NewAppRouterWithSales(
-	cmdRouter *commands.Router,
-	llmClient *ai.LLMClient,
-	financeService *finance.FinanceService,
-	notesService *notes.NotesService,
-	reminderService *reminder.Service,
-	salesService *sales.Service,
+        cmdRouter *commands.Router,
+        llmClient *ai.LLMClient,
+        financeService *finance.FinanceService,
+        notesService *notes.NotesService,
+        reminderService *reminder.Service,
+        salesService *sales.Service,
 ) *AppRouter {
-	return &AppRouter{
-		cmdRouter:       cmdRouter,
-		llmClient:       llmClient,
-		financeService:  financeService,
-		notesService:    notesService,
-		reminderService: reminderService,
-		salesService:    salesService,
-		pendingTTL:      defaultPendingTTL,
-		systemPrompt:    defaultSystemPrompt,
-	}
+        return &AppRouter{
+                cmdRouter:       cmdRouter,
+                llmClient:       llmClient,
+                financeService:  financeService,
+                notesService:    notesService,
+                reminderService: reminderService,
+                salesService:    salesService,
+                pendingTTL:      defaultPendingTTL,
+                systemPrompt:    defaultSystemPrompt,
+        }
 }
 
 func (r *AppRouter) HandleMessage(ctx context.Context, sender string, text string) string {
-	if r == nil {
-		return formatter.FormatError("Router belum siap.")
-	}
+        if r == nil {
+                return formatter.FormatError("Router belum siap.")
+        }
 
-	sender = strings.TrimSpace(sender)
-	text = strings.TrimSpace(text)
-	if text == "" {
-		return ""
-	}
+        sender = strings.TrimSpace(sender)
+        text = strings.TrimSpace(text)
+        if text == "" {
+                return ""
+        }
 
-	// 1) Check pending confirmation flow.
-	if pendingRaw, ok := r.pendingActions.Load(sender); ok {
-		pending, _ := pendingRaw.(*PendingAction)
-		if pending == nil || pending.Transaction == nil {
-			r.pendingActions.Delete(sender)
-		} else if time.Since(pending.CreatedAt) > r.pendingTTL {
-			r.pendingActions.Delete(sender)
-		} else {
-			lower := strings.ToLower(text)
-			switch lower {
-			case "ya", "yes", "y", "iya", "ok", "oke", "benar":
-				r.pendingActions.Delete(sender)
-				return r.executeTransaction(ctx, pending.Transaction)
-			case "bukan", "tidak", "no", "n", "cancel", "batal":
-				r.pendingActions.Delete(sender)
-				return "❌ Dibatalkan."
-			default:
-				// User changed topic; clear stale pending and continue normal routing.
-				r.pendingActions.Delete(sender)
-			}
-		}
-	}
+        // 1) Check pending confirmation flow.
+        if pendingRaw, ok := r.pendingActions.Load(sender); ok {
+                pending, _ := pendingRaw.(*PendingAction)
+                if pending == nil || pending.Transaction == nil {
+                        r.pendingActions.Delete(sender)
+                } else if time.Since(pending.CreatedAt) > r.pendingTTL {
+                        r.pendingActions.Delete(sender)
+                } else {
+                        lower := strings.ToLower(text)
+                        switch lower {
+                        case "ya", "yes", "y", "iya", "ok", "oke", "benar":
+                                r.pendingActions.Delete(sender)
+                                return r.executeTransaction(ctx, pending.Transaction)
+                        case "bukan", "tidak", "no", "n", "cancel", "batal":
+                                r.pendingActions.Delete(sender)
+                                return "❌ Dibatalkan."
+                        default:
+                                // User changed topic; clear stale pending and continue normal routing.
+                                r.pendingActions.Delete(sender)
+                        }
+                }
+        }
 
-	// 2) Commands have priority over LLM.
-	if r.cmdRouter != nil {
-		if response, matched := r.cmdRouter.Route(ctx, text); matched {
-			return response
-		}
-	}
+        // 2) Commands have priority over LLM.
+        if r.cmdRouter != nil {
+                if response, matched := r.cmdRouter.Route(ctx, text); matched {
+                        return response
+                }
+        }
 
-	// 2.5) Optional natural reminder intent routing (before LLM).
-	if r.reminderService != nil {
-		if resp, handled := r.tryHandleNaturalReminder(ctx, text); handled {
-			return resp
-		}
-	}
+        // 2.5) Optional natural reminder intent routing (before LLM).
+        if r.reminderService != nil {
+                if resp, handled := r.tryHandleNaturalReminder(ctx, text); handled {
+                        return resp
+                }
+        }
 
-	// 3) LLM route.
-	if r.llmClient == nil {
-		return formatter.FormatError("Layanan AI belum siap.")
-	}
+        // 3) LLM route.
+        if r.llmClient == nil {
+                return formatter.FormatError("Layanan AI belum siap.")
+        }
 
-	llmResp, err := r.llmClient.ChatWithSales(ctx, r.systemPrompt, text)
-	if err != nil {
-		return formatter.FormatError("Maaf, sedang ada gangguan. Coba lagi nanti ya.")
-	}
+        llmResp, err := r.llmClient.ChatWithSales(ctx, r.systemPrompt, text)
+        if err != nil {
+                return formatter.FormatError("Maaf, sedang ada gangguan. Coba lagi nanti ya.")
+        }
 
-	// 4) Tool calls.
-	if len(llmResp.ToolCalls) > 0 {
-		return r.handleToolCalls(ctx, sender, llmResp.ToolCalls)
-	}
+        // 4) Tool calls.
+        if len(llmResp.ToolCalls) > 0 {
+                return r.handleToolCalls(ctx, sender, llmResp.ToolCalls)
+        }
 
-	// 5) General chat response.
-	content := strings.TrimSpace(llmResp.Content)
-	if content == "" {
-		return formatter.FormatError("Tidak ada respons dari AI. Coba lagi ya.")
-	}
-	return content
+        // 5) General chat response.
+        content := strings.TrimSpace(llmResp.Content)
+        if content == "" {
+                return formatter.FormatError("Tidak ada respons dari AI. Coba lagi ya.")
+        }
+        return content
 }
 
 func (r *AppRouter) handleToolCalls(ctx context.Context, sender string, calls []ai.ToolCall) string {
-	_ = sender
+        _ = sender
 
-	var responses []string
-	var txResults []transactionExecResult
-	var budgetAlerts []string
+        var responses []string
+        var txResults []transactionExecResult
+        var budgetAlerts []string
 
-	for _, call := range calls {
-		switch call.Name {
-		// === FINANCE TOOLS ===
-		case "record_transaction":
-			var args ai.RecordTransactionArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data transaksi tidak valid."))
-				continue
-			}
+        for _, call := range calls {
+                switch call.Name {
+                // === FINANCE TOOLS ===
+                case "record_transaction":
+                        var args ai.RecordTransactionArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data transaksi tidak valid."))
+                                continue
+                        }
 
-			result, budgetAlert, err := r.executeTransactionResult(ctx, &args)
-			if err != nil {
-				responses = append(responses, formatter.FormatError("Gagal mencatat: "+err.Error()))
-				continue
-			}
-			txResults = append(txResults, result)
-			if strings.TrimSpace(budgetAlert) != "" {
-				budgetAlerts = append(budgetAlerts, budgetAlert)
-			}
+                        result, budgetAlert, err := r.executeTransactionResult(ctx, &args)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError("Gagal mencatat: "+err.Error()))
+                                continue
+                        }
+                        txResults = append(txResults, result)
+                        if strings.TrimSpace(budgetAlert) != "" {
+                                budgetAlerts = append(budgetAlerts, budgetAlert)
+                        }
 
-		case "get_report":
-			if r.financeService == nil {
-				responses = append(responses, formatter.FormatError("Service laporan belum siap."))
-				continue
-			}
+                case "get_report":
+                        if r.financeService == nil {
+                                responses = append(responses, formatter.FormatError("Service laporan belum siap."))
+                                continue
+                        }
 
-			var args ai.GetReportArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data laporan tidak valid."))
-				continue
-			}
+                        var args ai.GetReportArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data laporan tidak valid."))
+                                continue
+                        }
 
-			report, err := r.financeService.GenerateReport(ctx, args.Period)
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
+                        report, err := r.financeService.GenerateReport(ctx, args.Period)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
 
-			switch normalizeReportPeriod(args.Period, report.Period) {
-			case "weekly":
-				responses = append(responses, formatter.FormatWeeklyReport(report.DateRange, report.TotalIncome, report.TotalExpense, report.Categories))
-			case "monthly":
-				responses = append(responses, formatter.FormatMonthlyReport(report.DateRange, report.TotalIncome, report.TotalExpense, report.Categories))
-			default:
-				responses = append(responses, formatter.FormatDailyReport(report.DateRange, report.TotalIncome, report.TotalExpense, report.Categories))
-			}
+                        switch normalizeReportPeriod(args.Period, report.Period) {
+                        case "weekly":
+                                responses = append(responses, formatter.FormatWeeklyReport(report.DateRange, report.TotalIncome, report.TotalExpense, report.Categories))
+                        case "monthly":
+                                responses = append(responses, formatter.FormatMonthlyReport(report.DateRange, report.TotalIncome, report.TotalExpense, report.Categories))
+                        default:
+                                responses = append(responses, formatter.FormatDailyReport(report.DateRange, report.TotalIncome, report.TotalExpense, report.Categories))
+                        }
 
-		case "set_budget":
-			if r.financeService == nil {
-				responses = append(responses, formatter.FormatError("Service budget belum siap."))
-				continue
-			}
+                case "set_budget":
+                        if r.financeService == nil {
+                                responses = append(responses, formatter.FormatError("Service budget belum siap."))
+                                continue
+                        }
 
-			var args ai.SetBudgetArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data budget tidak valid."))
-				continue
-			}
+                        var args ai.SetBudgetArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data budget tidak valid."))
+                                continue
+                        }
 
-			if err := r.financeService.SetBudget(ctx, args.Category, args.Amount); err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatBudgetSet(args.Category, args.Amount))
+                        if err := r.financeService.SetBudget(ctx, args.Category, args.Amount); err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatBudgetSet(args.Category, args.Amount))
 
-		case "save_note":
-			var args ai.SaveNoteArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data catatan tidak valid."))
-				continue
-			}
+                case "save_note":
+                        var args ai.SaveNoteArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data catatan tidak valid."))
+                                continue
+                        }
 
-			// If LLM routes reminder-like text to save_note, upgrade it to reminder flow.
-			if r.reminderService != nil && isReminderIntent(args.Content) {
-				rem, err := r.reminderService.CreateFromText(ctx, args.Content)
-				if err != nil {
-					responses = append(responses, formatter.FormatError("Gagal membuat reminder: "+err.Error()))
-					continue
-				}
-				responses = append(responses, formatReminderCreatedMessage(rem))
-				continue
-			}
+                        // If LLM routes reminder-like text to save_note, upgrade it to reminder flow.
+                        if r.reminderService != nil && isReminderIntent(args.Content) {
+                                rem, err := r.reminderService.CreateFromText(ctx, args.Content)
+                                if err != nil {
+                                        responses = append(responses, formatter.FormatError("Gagal membuat reminder: "+err.Error()))
+                                        continue
+                                }
+                                responses = append(responses, formatReminderCreatedMessage(rem))
+                                continue
+                        }
 
-			if r.notesService == nil {
-				responses = append(responses, formatter.FormatError("Service catatan belum siap."))
-				continue
-			}
+                        if r.notesService == nil {
+                                responses = append(responses, formatter.FormatError("Service catatan belum siap."))
+                                continue
+                        }
 
-			if err := r.notesService.SaveNote(ctx, args.Content); err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatNoteSaved(args.Content))
+                        if err := r.notesService.SaveNote(ctx, args.Content); err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatNoteSaved(args.Content))
 
-		case "edit_transaction":
-			if r.financeService == nil {
-				responses = append(responses, formatter.FormatError("Service edit belum siap."))
-				continue
-			}
+                case "edit_transaction":
+                        if r.financeService == nil {
+                                responses = append(responses, formatter.FormatError("Service edit belum siap."))
+                                continue
+                        }
 
-			var args ai.EditTransactionArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data edit tidak valid."))
-				continue
-			}
+                        var args ai.EditTransactionArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data edit tidak valid."))
+                                continue
+                        }
 
-			_, err := r.financeService.EditTransaction(ctx, args.ID, args.Field, args.Value)
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatTransactionEdited(args.ID, args.Field, "", args.Value))
+                        _, err := r.financeService.EditTransaction(ctx, args.ID, args.Field, args.Value)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatTransactionEdited(args.ID, args.Field, "", args.Value))
 
-		case "delete_transaction":
-			if r.financeService == nil {
-				responses = append(responses, formatter.FormatError("Service hapus belum siap."))
-				continue
-			}
+                case "delete_transaction":
+                        if r.financeService == nil {
+                                responses = append(responses, formatter.FormatError("Service hapus belum siap."))
+                                continue
+                        }
 
-			var args ai.DeleteTransactionArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data hapus tidak valid."))
-				continue
-			}
+                        var args ai.DeleteTransactionArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data hapus tidak valid."))
+                                continue
+                        }
 
-			if err := r.financeService.DeleteTransaction(ctx, args.ID); err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatTransactionDeleted(args.ID))
+                        if err := r.financeService.DeleteTransaction(ctx, args.ID); err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatTransactionDeleted(args.ID))
 
-		// === SALES TOOLS ===
-		case "create_sales_transaction":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                // === SALES TOOLS ===
+                case "create_sales_transaction":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			var args ai.CreateSalesTransactionArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data transaksi penjualan tidak valid."))
-				continue
-			}
+                        var args ai.CreateSalesTransactionArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data transaksi penjualan tidak valid."))
+                                continue
+                        }
 
-			result, err := r.salesService.CreateTransaction(ctx, &sales.TransactionRequest{
-				ItemNama:     args.ItemNama,
-				Qty:          args.Qty,
-				CustomerNama: args.CustomerNama,
-				Catatan:      args.Catatan,
-			})
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, sales.FormatTransactionResult(result))
+                        result, err := r.salesService.CreateTransaction(ctx, &sales.TransactionRequest{
+                                ItemNama:     args.ItemNama,
+                                Qty:          args.Qty,
+                                CustomerNama: args.CustomerNama,
+                                Catatan:      args.Catatan,
+                        })
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, sales.FormatTransactionResult(result))
 
-		case "add_sales_item":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "add_sales_item":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			var args ai.AddSalesItemArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data item tidak valid."))
-				continue
-			}
+                        var args ai.AddSalesItemArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data item tidak valid."))
+                                continue
+                        }
 
-			item, err := r.salesService.AddItem(ctx, args.Nama, args.HargaBeli, args.Satuan)
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatSalesItemAdded(item.Nama, item.Satuan, item.HargaBeli))
+                        item, err := r.salesService.AddItem(ctx, args.Nama, args.HargaBeli, args.Satuan)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatSalesItemAdded(item.Nama, item.Satuan, item.HargaBeli))
 
-		case "add_sales_customer":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "add_sales_customer":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			var args ai.AddSalesCustomerArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data customer tidak valid."))
-				continue
-			}
+                        var args ai.AddSalesCustomerArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data customer tidak valid."))
+                                continue
+                        }
 
-			customer, err := r.salesService.AddCustomer(ctx, args.Nama, args.Alamat, args.Telepon, args.JatuhTempo, args.Payment)
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatSalesCustomerAdded(customer.Nama, customer.Alamat, customer.JatuhTempo, customer.Payment))
+                        customer, err := r.salesService.AddCustomer(ctx, args.Nama, args.Alamat, args.Telepon, args.JatuhTempo, args.Payment)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatSalesCustomerAdded(customer.Nama, customer.Alamat, customer.JatuhTempo, customer.Payment))
 
-		case "set_customer_pricing":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "set_customer_pricing":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			var args ai.SetCustomerPricingArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data harga tidak valid."))
-				continue
-			}
+                        var args ai.SetCustomerPricingArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data harga tidak valid."))
+                                continue
+                        }
 
-			if err := r.salesService.SetCustomerPricing(ctx, args.CustomerNama, args.ItemNama, args.HargaJual); err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatCustomerPricingSet(args.CustomerNama, args.ItemNama, args.HargaJual))
+                        if err := r.salesService.SetCustomerPricing(ctx, args.CustomerNama, args.ItemNama, args.HargaJual); err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatCustomerPricingSet(args.CustomerNama, args.ItemNama, args.HargaJual))
 
-		case "get_profit_report":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "get_profit_report":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			var args ai.GetProfitReportArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				args.Period = "bulan ini"
-			}
+                        var args ai.GetProfitReportArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                args.Period = "bulan ini"
+                        }
 
-			report, err := r.salesService.GetProfitReport(ctx, args.Period)
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatProfitReport(report.Period, report.TotalProfit, report.TotalSales, report.TotalCost, report.TransactionCount, report.Items, report.Customers))
+                        report, err := r.salesService.GetProfitReport(ctx, args.Period)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatProfitReport(report.Period, report.TotalProfit, report.TotalSales, report.TotalCost, report.TransactionCount, report.Items, report.Customers))
 
-		case "get_receivable_summary":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "get_receivable_summary":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			summary, err := r.salesService.GetReceivableSummary(ctx)
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
+                        summary, err := r.salesService.GetReceivableSummary(ctx)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
 
-			var dueTodayList []formatter.ReceivableItem
-			for _, r := range summary.DueToday {
-				dueTodayList = append(dueTodayList, formatter.ReceivableItem{
-					Customer: r.CustomerNama,
-					Item:     r.ItemNama,
-					Jumlah:   r.Jumlah,
-				})
-			}
+                        var dueTodayList []formatter.ReceivableItem
+                        for _, r := range summary.DueToday {
+                                dueTodayList = append(dueTodayList, formatter.ReceivableItem{
+                                        Customer: r.CustomerNama,
+                                        Item:     r.ItemNama,
+                                        Jumlah:   r.Jumlah,
+                                })
+                        }
 
-			var overdueList []formatter.ReceivableItem
-			for _, r := range summary.Overdue {
-				daysLate := int(time.Since(r.JatuhTempo).Hours() / 24)
-				overdueList = append(overdueList, formatter.ReceivableItem{
-					Customer: r.CustomerNama,
-					Item:     r.ItemNama,
-					Jumlah:   r.Jumlah,
-					DaysLate: daysLate,
-				})
-			}
+                        var overdueList []formatter.ReceivableItem
+                        for _, r := range summary.Overdue {
+                                daysLate := int(time.Since(r.JatuhTempo).Hours() / 24)
+                                overdueList = append(overdueList, formatter.ReceivableItem{
+                                        Customer: r.CustomerNama,
+                                        Item:     r.ItemNama,
+                                        Jumlah:   r.Jumlah,
+                                        DaysLate: daysLate,
+                                })
+                        }
 
-			responses = append(responses, formatter.FormatReceivableSummary(summary.TotalDueToday, summary.TotalOverdue, summary.TotalPending, dueTodayList, overdueList))
+                        responses = append(responses, formatter.FormatReceivableSummary(summary.TotalDueToday, summary.TotalOverdue, summary.TotalPending, dueTodayList, overdueList))
 
-		case "get_payable_summary":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "get_payable_summary":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			summary, err := r.salesService.GetPayableSummary(ctx)
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
+                        summary, err := r.salesService.GetPayableSummary(ctx)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
 
-			var payableList []formatter.PayableItem
-			for _, p := range summary.Payables {
-				payableList = append(payableList, formatter.PayableItem{
-					Item:   p.ItemNama,
-					Jumlah: p.Jumlah,
-				})
-			}
+                        var payableList []formatter.PayableItem
+                        for _, p := range summary.Payables {
+                                payableList = append(payableList, formatter.PayableItem{
+                                        Item:   p.ItemNama,
+                                        Jumlah: p.Jumlah,
+                                })
+                        }
 
-			responses = append(responses, formatter.FormatPayableSummary(summary.TotalPending, payableList, summary.DueDate.Format("02/01/2006")))
+                        responses = append(responses, formatter.FormatPayableSummary(summary.TotalPending, payableList, summary.DueDate.Format("02/01/2006")))
 
-		case "pay_receivable":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "pay_receivable":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			var args ai.PayReceivableArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data pembayaran tidak valid."))
-				continue
-			}
+                        var args ai.PayReceivableArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data pembayaran tidak valid."))
+                                continue
+                        }
 
-			if err := r.salesService.PayReceivable(ctx, args.CustomerNama, args.Jumlah); err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatReceivablePaid(args.CustomerNama, args.Jumlah))
+                        if err := r.salesService.PayReceivable(ctx, args.CustomerNama, args.Jumlah); err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatReceivablePaid(args.CustomerNama, args.Jumlah))
 
-		case "pay_payable":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "pay_payable":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			var args ai.PayPayableArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data pembayaran tidak valid."))
-				continue
-			}
+                        var args ai.PayPayableArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data pembayaran tidak valid."))
+                                continue
+                        }
 
-			if err := r.salesService.PayPayable(ctx, args.Jumlah); err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
-			responses = append(responses, formatter.FormatPayablePaid(args.Jumlah))
+                        if err := r.salesService.PayPayable(ctx, args.Jumlah); err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
+                        responses = append(responses, formatter.FormatPayablePaid(args.Jumlah))
 
-		case "toggle_wa_reminder":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "toggle_wa_reminder":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			var args ai.ToggleWAReminderArgs
-			if err := json.Unmarshal(call.Arguments, &args); err != nil {
-				responses = append(responses, formatter.FormatError("Format data toggle tidak valid."))
-				continue
-			}
+                        var args ai.ToggleWAReminderArgs
+                        if err := json.Unmarshal(call.Arguments, &args); err != nil {
+                                responses = append(responses, formatter.FormatError("Format data toggle tidak valid."))
+                                continue
+                        }
 
-			r.salesService.ToggleWAReminder(args.Enabled)
-			responses = append(responses, formatter.FormatWAReminderToggled(args.Enabled))
+                        r.salesService.ToggleWAReminder(args.Enabled)
+                        responses = append(responses, formatter.FormatWAReminderToggled(args.Enabled))
 
-		case "list_sales_items":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "list_sales_items":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			items, err := r.salesService.ListItems(ctx)
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
+                        items, err := r.salesService.ListItems(ctx)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
 
-			var itemList []formatter.SalesItemInfo
-			for _, i := range items {
-				itemList = append(itemList, formatter.SalesItemInfo{
-					Nama:      i.Nama,
-					HargaBeli: i.HargaBeli,
-					Satuan:    i.Satuan,
-				})
-			}
-			responses = append(responses, formatter.FormatSalesItemsList(itemList))
+                        var itemList []formatter.SalesItemInfo
+                        for _, i := range items {
+                                itemList = append(itemList, formatter.SalesItemInfo{
+                                        Nama:      i.Nama,
+                                        HargaBeli: i.HargaBeli,
+                                        Satuan:    i.Satuan,
+                                })
+                        }
+                        responses = append(responses, formatter.FormatSalesItemsList(itemList))
 
-		case "list_sales_customers":
-			if r.salesService == nil {
-				responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
-				continue
-			}
+                case "list_sales_customers":
+                        if r.salesService == nil {
+                                responses = append(responses, formatter.FormatError("Service penjualan belum siap."))
+                                continue
+                        }
 
-			customers, err := r.salesService.ListCustomers(ctx)
-			if err != nil {
-				responses = append(responses, formatter.FormatError(err.Error()))
-				continue
-			}
+                        customers, err := r.salesService.ListCustomers(ctx)
+                        if err != nil {
+                                responses = append(responses, formatter.FormatError(err.Error()))
+                                continue
+                        }
 
-			var custList []formatter.SalesCustomerInfo
-			for _, c := range customers {
-				custList = append(custList, formatter.SalesCustomerInfo{
-					Nama:       c.Nama,
-					JatuhTempo: c.JatuhTempo,
-					Payment:    c.Payment,
-				})
-			}
-			responses = append(responses, formatter.FormatSalesCustomersList(custList))
-		}
-	}
+                        var custList []formatter.SalesCustomerInfo
+                        for _, c := range customers {
+                                custList = append(custList, formatter.SalesCustomerInfo{
+                                        Nama:       c.Nama,
+                                        JatuhTempo: c.JatuhTempo,
+                                        Payment:    c.Payment,
+                                })
+                        }
+                        responses = append(responses, formatter.FormatSalesCustomersList(custList))
+                }
+        }
 
-	if len(txResults) > 0 {
-		responses = append([]string{formatCompactTransactionSummary(txResults)}, responses...)
-	}
+        if len(txResults) > 0 {
+                responses = append([]string{formatCompactTransactionSummary(txResults)}, responses...)
+        }
 
-	if len(budgetAlerts) > 0 {
-		responses = append(responses, strings.Join(budgetAlerts, "\n\n"))
-	}
+        if len(budgetAlerts) > 0 {
+                responses = append(responses, strings.Join(budgetAlerts, "\n\n"))
+        }
 
-	if len(responses) == 0 {
-		return formatter.FormatError("Tidak dapat memproses permintaan.")
-	}
+        if len(responses) == 0 {
+                return formatter.FormatError("Tidak dapat memproses permintaan.")
+        }
 
-	return strings.Join(responses, "\n\n")
+        return strings.Join(responses, "\n\n")
 }
 
 func (r *AppRouter) executeTransaction(ctx context.Context, args *ai.RecordTransactionArgs) string {
-	result, budgetAlert, err := r.executeTransactionResult(ctx, args)
-	if err != nil {
-		return formatter.FormatError("Gagal mencatat: " + err.Error())
-	}
+        result, budgetAlert, err := r.executeTransactionResult(ctx, args)
+        if err != nil {
+                return formatter.FormatError("Gagal mencatat: " + err.Error())
+        }
 
-	var response string
-	if result.IsIncome {
-		response = formatter.FormatIncomeRecorded(result.ID, result.Description, result.Category, result.Amount)
-	} else {
-		response = formatter.FormatExpenseRecorded(result.ID, result.Description, result.Category, result.Amount)
-	}
+        var response string
+        if result.IsIncome {
+                response = formatter.FormatIncomeRecorded(result.ID, result.Description, result.Category, result.Amount)
+        } else {
+                response = formatter.FormatExpenseRecorded(result.ID, result.Description, result.Category, result.Amount)
+        }
 
-	if strings.TrimSpace(budgetAlert) != "" {
-		response += "\n\n" + budgetAlert
-	}
-	return response
+        if strings.TrimSpace(budgetAlert) != "" {
+                response += "\n\n" + budgetAlert
+        }
+        return response
 }
 
 func (r *AppRouter) executeTransactionResult(ctx context.Context, args *ai.RecordTransactionArgs) (transactionExecResult, string, error) {
-	if r.financeService == nil {
-		return transactionExecResult{}, "", fmt.Errorf("service transaksi belum siap")
-	}
-	if args == nil {
-		return transactionExecResult{}, "", fmt.Errorf("data transaksi kosong")
-	}
+        if r.financeService == nil {
+                return transactionExecResult{}, "", fmt.Errorf("service transaksi belum siap")
+        }
+        if args == nil {
+                return transactionExecResult{}, "", fmt.Errorf("data transaksi kosong")
+        }
 
-	tx, budgetAlert, err := r.financeService.RecordTransactionWithBudget(ctx, args)
-	if err != nil {
-		return transactionExecResult{}, "", err
-	}
+        tx, budgetAlert, err := r.financeService.RecordTransactionWithBudget(ctx, args)
+        if err != nil {
+                return transactionExecResult{}, "", err
+        }
 
-	return transactionExecResult{
-		ID:          tx.ID,
-		Description: tx.Description,
-		Category:    tx.Category,
-		Amount:      tx.Amount,
-		IsIncome:    strings.EqualFold(strings.TrimSpace(args.Type), "income"),
-		When:        tx.Date,
-	}, budgetAlert, nil
+        return transactionExecResult{
+                ID:          tx.ID,
+                Description: tx.Description,
+                Category:    tx.Category,
+                Amount:      tx.Amount,
+                IsIncome:    strings.EqualFold(strings.TrimSpace(args.Type), "income"),
+                When:        tx.Date,
+        }, budgetAlert, nil
 }
 
 func formatCompactTransactionSummary(results []transactionExecResult) string {
-	if len(results) == 0 {
-		return formatter.FormatError("Tidak ada transaksi yang dapat ditampilkan.")
-	}
+        if len(results) == 0 {
+                return formatter.FormatError("Tidak ada transaksi yang dapat ditampilkan.")
+        }
 
-	allIncome := true
-	allExpense := true
-	for _, r := range results {
-		if r.IsIncome {
-			allExpense = false
-		} else {
-			allIncome = false
-		}
-	}
+        allIncome := true
+        allExpense := true
+        for _, r := range results {
+                if r.IsIncome {
+                        allExpense = false
+                } else {
+                        allIncome = false
+                }
+        }
 
-	title := "✅ *Transaksi berhasil dicatat!*"
-	if allExpense {
-		title = fmt.Sprintf("✅ *%d pengeluaran berhasil dicatat!*", len(results))
-	} else if allIncome {
-		title = fmt.Sprintf("✅ *%d pemasukan berhasil dicatat!*", len(results))
-	}
+        title := "✅ *Transaksi berhasil dicatat!*"
+        if allExpense {
+                title = fmt.Sprintf("✅ *%d pengeluaran berhasil dicatat!*", len(results))
+        } else if allIncome {
+                title = fmt.Sprintf("✅ *%d pemasukan berhasil dicatat!*", len(results))
+        }
 
-	var b strings.Builder
-	b.WriteString(title)
-	b.WriteString("\n\n")
+        var b strings.Builder
+        b.WriteString(title)
+        b.WriteString("\n\n")
 
-	totalAmount := 0.0
-	for i, item := range results {
-		if i > 0 {
-			b.WriteString("\n\n")
-		}
-		b.WriteString("🆔 ID: ")
-		b.WriteString(item.ID)
-		b.WriteString("\n📝 Deskripsi: ")
-		b.WriteString(item.Description)
-		b.WriteString("\n📂 Kategori: ")
-		b.WriteString(item.Category)
-		b.WriteString("\n💰 Jumlah: ")
-		b.WriteString(formatIDRCompact(item.Amount))
+        totalAmount := 0.0
+        for i, item := range results {
+                if i > 0 {
+                        b.WriteString("\n\n")
+                }
+                b.WriteString("🆔 ID: ")
+                b.WriteString(item.ID)
+                b.WriteString("\n📝 Deskripsi: ")
+                b.WriteString(item.Description)
+                b.WriteString("\n📂 Kategori: ")
+                b.WriteString(item.Category)
+                b.WriteString("\n💰 Jumlah: ")
+                b.WriteString(formatIDRCompact(item.Amount))
 
-		totalAmount += item.Amount
-	}
+                totalAmount += item.Amount
+        }
 
-	icon := "💰"
-	label := "Total"
-	if allExpense {
-		icon = "💸"
-		label = "Total Pengeluaran"
-	} else if allIncome {
-		icon = "💵"
-		label = "Total Pemasukan"
-	}
+        icon := "💰"
+        label := "Total"
+        if allExpense {
+                icon = "💸"
+                label = "Total Pengeluaran"
+        } else if allIncome {
+                icon = "💵"
+                label = "Total Pemasukan"
+        }
 
-	b.WriteString("\n\n")
-	b.WriteString(icon)
-	b.WriteString(" ")
-	b.WriteString(label)
-	b.WriteString(": ")
-	b.WriteString(formatIDRCompact(totalAmount))
+        b.WriteString("\n\n")
+        b.WriteString(icon)
+        b.WriteString(" ")
+        b.WriteString(label)
+        b.WriteString(": ")
+        b.WriteString(formatIDRCompact(totalAmount))
 
-	last := results[len(results)-1].When.In(time.FixedZone("WIB", 7*60*60))
-	b.WriteString("\n\n📅 ")
-	b.WriteString(last.Format("02 Jan 2006, 15:04 WIB"))
+        last := results[len(results)-1].When.In(time.FixedZone("WIB", 7*60*60))
+        b.WriteString("\n\n📅 ")
+        b.WriteString(last.Format("02 Jan 2006, 15:04 WIB"))
 
-	return b.String()
+        return b.String()
 }
 
 func formatIDRCompact(amount float64) string {
-	sign := ""
-	if amount < 0 {
-		sign = "-"
-		amount = -amount
-	}
+        sign := ""
+        if amount < 0 {
+                sign = "-"
+                amount = -amount
+        }
 
-	rounded := math.Round(amount*100) / 100
-	intPart := int64(rounded)
-	fracPart := int(math.Round((rounded - float64(intPart)) * 100))
+        rounded := math.Round(amount*100) / 100
+        intPart := int64(rounded)
+        fracPart := int(math.Round((rounded - float64(intPart)) * 100))
 
-	intText := withThousandDotsCompact(strconv.FormatInt(intPart, 10))
-	if fracPart == 0 {
-		return sign + "Rp " + intText
-	}
-	return fmt.Sprintf("%sRp %s,%02d", sign, intText, fracPart)
+        intText := withThousandDotsCompact(strconv.FormatInt(intPart, 10))
+        if fracPart == 0 {
+                return sign + "Rp " + intText
+        }
+        return fmt.Sprintf("%sRp %s,%02d", sign, intText, fracPart)
 }
 
 func withThousandDotsCompact(s string) string {
-	if len(s) <= 3 {
-		return s
-	}
+        if len(s) <= 3 {
+                return s
+        }
 
-	prefix := len(s) % 3
-	if prefix == 0 {
-		prefix = 3
-	}
+        prefix := len(s) % 3
+        if prefix == 0 {
+                prefix = 3
+        }
 
-	var b strings.Builder
-	b.WriteString(s[:prefix])
-	for i := prefix; i < len(s); i += 3 {
-		b.WriteString(".")
-		b.WriteString(s[i : i+3])
-	}
-	return b.String()
+        var b strings.Builder
+        b.WriteString(s[:prefix])
+        for i := prefix; i < len(s); i += 3 {
+                b.WriteString(".")
+                b.WriteString(s[i : i+3])
+        }
+        return b.String()
 }
 
 func (r *AppRouter) tryHandleNaturalReminder(ctx context.Context, text string) (string, bool) {
-	if r == nil || r.reminderService == nil {
-		return "", false
-	}
-	if !isReminderIntent(text) {
-		return "", false
-	}
+        if r == nil || r.reminderService == nil {
+                return "", false
+        }
+        if !isReminderIntent(text) {
+                return "", false
+        }
 
-	rem, err := r.reminderService.CreateFromText(ctx, text)
-	if err != nil {
-		return formatter.FormatError("Gagal membuat reminder: " + err.Error()), true
-	}
-	return formatReminderCreatedMessage(rem), true
+        rem, err := r.reminderService.CreateFromText(ctx, text)
+        if err != nil {
+                return formatter.FormatError("Gagal membuat reminder: " + err.Error()), true
+        }
+        return formatReminderCreatedMessage(rem), true
 }
 
 func isReminderIntent(text string) bool {
-	t := strings.ToLower(strings.TrimSpace(text))
-	if t == "" {
-		return false
-	}
+        t := strings.ToLower(strings.TrimSpace(text))
+        if t == "" {
+                return false
+        }
 
-	keywords := []string{
-		"ingetin",
-		"ingatkan",
-		"pengingat",
-		"reminder",
-		"jangan lupa",
-		"tolong ingatkan",
-	}
-	for _, k := range keywords {
-		if strings.Contains(t, k) {
-			return true
-		}
-	}
-	return false
+        keywords := []string{
+                "ingetin",
+                "ingatkan",
+                "pengingat",
+                "reminder",
+                "jangan lupa",
+                "tolong ingatkan",
+        }
+        for _, k := range keywords {
+                if strings.Contains(t, k) {
+                        return true
+                }
+        }
+        return false
 }
 
 func formatReminderCreatedMessage(rem *sheets.Reminder) string {
-	if rem == nil {
-		return formatter.FormatError("Reminder tidak valid.")
-	}
+        if rem == nil {
+                return formatter.FormatError("Reminder tidak valid.")
+        }
 
-	targetDate := rem.TargetDate.Format("02 Jan 2006")
-	targetTime := rem.TargetTime
-	if targetTime == "" {
-		targetTime = "tanpa jam spesifik (3x/hari sampai selesai)"
-	} else {
-		targetTime += " WIB"
-	}
+        targetDate := rem.TargetDate.Format("02 Jan 2006")
+        targetTime := rem.TargetTime
+        if targetTime == "" {
+                targetTime = "tanpa jam spesifik (3x/hari sampai selesai)"
+        } else {
+                targetTime += " WIB"
+        }
 
-	return fmt.Sprintf(
-		"✅ *Pengingat disimpan!*\n\n🆔 ID: %s\n🗓️ Tanggal: %s\n🕒 Waktu: %s\n📝 %s\n\nJika sudah dilakukan, kirim: */done %s*",
-		rem.ID,
-		targetDate,
-		targetTime,
-		rem.Message,
-		rem.ID,
-	)
+        return fmt.Sprintf(
+                "✅ *Pengingat disimpan!*\n\n🆔 ID: %s\n🗓️ Tanggal: %s\n🕒 Waktu: %s\n📝 %s\n\nJika sudah dilakukan, kirim: */done %s*",
+                rem.ID,
+                targetDate,
+                targetTime,
+                rem.Message,
+                rem.ID,
+        )
 }
 
 func normalizeReportPeriod(raw string, fallback string) string {
-	p := strings.ToLower(strings.TrimSpace(raw))
-	switch p {
-	case "daily", "harian", "hari ini":
-		return "daily"
-	case "weekly", "mingguan", "minggu ini":
-		return "weekly"
-	case "monthly", "bulanan", "bulan ini":
-		return "monthly"
-	}
+        p := strings.ToLower(strings.TrimSpace(raw))
+        switch p {
+        case "daily", "harian", "hari ini":
+                return "daily"
+        case "weekly", "mingguan", "minggu ini":
+                return "weekly"
+        case "monthly", "bulanan", "bulan ini":
+                return "monthly"
+        }
 
-	fb := strings.ToLower(strings.TrimSpace(fallback))
-	switch fb {
-	case "daily", "weekly", "monthly":
-		return fb
-	default:
-		return "daily"
-	}
+        fb := strings.ToLower(strings.TrimSpace(fallback))
+        switch fb {
+        case "daily", "weekly", "monthly":
+                return fb
+        default:
+                return "daily"
+        }
 }
