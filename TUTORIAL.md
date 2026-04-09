@@ -128,7 +128,19 @@ Service Account diperlukan agar bot bisa membaca dan menulis ke Google Sheets.
 4. Klik tombol "ENABLE"
 5. Tunggu sampai enabled
 
-#### Step 4: Buat Service Account
+#### Step 4: Enable Google Drive API (Diperlukan!)
+1. Kembali ke "APIs & Services" > "Library"
+2. Di kolom pencarian, ketik: `Google Drive API`
+3. Klik hasil "Google Drive API"
+4. Klik tombol "ENABLE"
+5. Tunggu sampai enabled
+
+> **💡 GRATIS!** Google Sheets API dan Drive API gratis dengan limit:
+> - 300 requests/menit per project
+> - 500 requests/100 detik per user
+> - Cukup untuk penggunaan personal hingga ratusan transaksi per hari
+
+#### Step 5: Buat Service Account
 1. Di sidebar kiri, klik "APIs & Services" > "Credentials"
 2. Klik "+ CREATE CREDENTIALS" di atas
 3. Pilih "Service account"
@@ -141,7 +153,7 @@ Service Account diperlukan agar bot bisa membaca dan menulis ke Google Sheets.
 7. Klik "CONTINUE"
 8. Klik "DONE"
 
-#### Step 5: Buat dan Download Key JSON
+#### Step 6: Buat dan Download Key JSON
 1. Klik Service Account yang baru dibuat
 2. Klik tab "KEYS"
 3. Klik "ADD KEY" > "Create new key"
@@ -568,7 +580,9 @@ Kirim `/help` atau `/menu` untuk melihat semua command:
 **A:** Data disimpan di Google Sheets milik Anda. Kredensial disimpan lokal di komputer Anda. Tidak ada data yang dikirim ke server pihak ketiga selain API LLM.
 
 ### Q: Bisa digunakan di HP?
-**A:** Bot ini dirancang untuk dijalankan di komputer. Untuk penggunaan di HP, diperlukan setup tambahan seperti termux (Android) atau server cloud.
+**A:** Bisa! Ada 2 cara:
+1. **Termux (Android)** - Install Termux dari F-Droid, lalu jalankan bot di HP. Lihat panduan lengkap di [DEPLOYMENT.md](DEPLOYMENT.md)
+2. **Cloud Server Gratis** - Deploy ke Railway, Render, atau Oracle Cloud. Bot akan jalan 24/7 tanpa perlu HP menyala.
 
 ### Q: Bagaimana cara backup data?
 **A:** Data tersimpan di Google Sheets. Anda bisa export kapan saja dari Google Sheets (File > Download).
