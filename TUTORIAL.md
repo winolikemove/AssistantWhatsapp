@@ -197,37 +197,153 @@ Service Account diperlukan agar bot bisa membaca dan menulis ke Google Sheets.
 
 ## 5. Cara Mendapatkan API Key LLM
 
-### Opsi A: Menggunakan OpenAI
+### Opsi A: Google Gemini API (GRATIS) ⭐ RECOMMENDED
 
-1. Buka https://platform.openai.com/
+Google Gemini menyediakan API gratis dengan limit yang sangat generous!
+
+**Langkah-langkah:**
+1. Buka **https://aistudio.google.com/apikey**
+2. Login dengan akun Google Anda
+3. Klik **"Create API Key"**
+4. Pilih atau buat Google Cloud project
+5. **Salin API Key** yang muncul
+
+**Keunggulan:**
+- ✅ **GRATIS** dengan limit 1500 requests/hari
+- ✅ Model terbaru: `gemini-1.5-flash` (cepat) atau `gemini-1.5-pro` (lebih pintar)
+- ✅ Tidak perlu kartu kredit
+- ✅ Mendukung OpenAI-compatible API
+
+**Konfigurasi untuk .env:**
+```env
+LLM_API_KEY=AIzaSy...your-gemini-api-key
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+LLM_MODEL=gemini-2.0-flash
+```
+
+---
+
+### Opsi B: Groq (GRATIS) ⭐ CEPAT
+
+Groq menyediakan akses gratis ke model Llama dengan kecepatan sangat tinggi!
+
+**Langkah-langkah:**
+1. Buka **https://console.groq.com/**
+2. Daftar atau login (bisa pakai Google/GitHub)
+3. Klik **"API Keys"** di sidebar
+4. Klik **"Create API Key"**
+5. **Salin API Key**
+
+**Keunggulan:**
+- ✅ **GRATIS** dengan rate limit generous
+- ✅ Super cepat (inferensi di LPU)
+- ✅ Model: `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`
+- ✅ OpenAI-compatible API
+
+**Konfigurasi untuk .env:**
+```env
+LLM_API_KEY=gsk_...your-groq-api-key
+LLM_BASE_URL=https://api.groq.com/openai/v1
+LLM_MODEL=llama-3.3-70b-versatile
+```
+
+---
+
+### Opsi C: OpenRouter (Berbagai Model)
+
+OpenRouter adalah aggregator yang menyediakan akses ke berbagai model LLM.
+
+**Langkah-langkah:**
+1. Buka **https://openrouter.ai/**
 2. Daftar atau login
-3. Klik "API keys" di sidebar
-4. Klik "+ Create new secret key"
-5. Beri nama, lalu klik "Create"
-6. **Salin API key** (hanya muncul sekali!)
-7. Simpan dengan aman
+3. Klik **"Keys"** di sidebar
+4. Klik **"Create Key"**
+5. **Salin API Key**
 
-### Opsi B: Menggunakan OpenRouter (Lebih Murah)
+**Keunggulan:**
+- ✅ Akses ke banyak model (GPT, Claude, Llama, dll)
+- ✅ Bisa pakai model gratis (dengan rate limit)
+- ✅ Harga kompetitif
 
-1. Buka https://openrouter.ai/
+**Konfigurasi untuk .env:**
+```env
+LLM_API_KEY=sk-or-...your-openrouter-key
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL=meta-llama/llama-3.3-70b-instruct:free
+```
+
+**Model Gratis di OpenRouter:**
+- `meta-llama/llama-3.3-70b-instruct:free`
+- `google/gemma-3-1b-it:free`
+- `qwen/qwen-2.5-72b-instruct:free`
+
+---
+
+### Opsi D: OpenAI (Berbayar)
+
+OpenAI adalah provider LLM paling populer dengan kualitas terbaik.
+
+**Langkah-langkah:**
+1. Buka **https://platform.openai.com/**
 2. Daftar atau login
-3. Klik "Keys" di sidebar
-4. Klik "Create Key"
-5. Beri nama, lalu klik "Create"
-6. **Salin API key**
+3. Klik **"API keys"** di sidebar
+4. Klik **"+ Create new secret key"**
+5. **Salin API key** (hanya muncul sekali!)
 
-**Konfigurasi OpenRouter:**
-- Base URL: `https://openrouter.ai/api/v1`
-- Model: `openai/gpt-4o-mini` (atau model lain)
+**Catatan:**
+- ⚠️ Perlu top-up saldo (minimum $5)
+- ⚠️ Harga: ~$0.15/1M tokens (gpt-4o-mini)
 
-### Opsi C: Menggunakan LLM Lokal (Gratis)
+**Konfigurasi untuk .env:**
+```env
+LLM_API_KEY=sk-proj-...your-openai-key
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4o-mini
+```
 
-Jika punya komputer powerful, bisa gunakan Ollama:
-1. Install Ollama dari https://ollama.ai/
-2. Jalankan: `ollama run llama3`
-3. Base URL: `http://localhost:11434/v1`
-4. Model: `llama3`
-5. API Key: `ollama` (dummy)
+---
+
+### Opsi E: Ollama (Lokal - GRATIS)
+
+Jika punya komputer dengan RAM cukup (8GB+), bisa jalankan LLM lokal.
+
+**Langkah-langkah:**
+1. Download Ollama dari **https://ollama.ai/**
+2. Install dan jalankan:
+   ```bash
+   ollama run llama3.2
+   ```
+3. Model akan otomatis terdownload
+
+**Keunggulan:**
+- ✅ **GRATIS** - tidak perlu API key
+- ✅ Privat - data tidak keluar dari komputer
+- ✅ Tidak perlu internet setelah download
+
+**Kekurangan:**
+- ❌ Perlu komputer dengan RAM 8GB+
+- ❌ Model kurang pintar dibanding cloud
+
+**Konfigurasi untuk .env:**
+```env
+LLM_API_KEY=ollama
+LLM_BASE_URL=http://localhost:11434/v1
+LLM_MODEL=llama3.2
+```
+
+---
+
+### 📊 Perbandingan Provider LLM
+
+| Provider | Harga | Model Gratis | Kualitas | Kecepatan |
+|----------|-------|--------------|----------|-----------|
+| **Google Gemini** | GRATIS | ✅ gemini-2.0-flash | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **Groq** | GRATIS | ✅ llama-3.3-70b | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **OpenRouter** | Freemium | ✅ ada beberapa | ⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **OpenAI** | Berbayar | ❌ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **Ollama** | GRATIS | ✅ semua | ⭐⭐⭐ | ⭐⭐ |
+
+> **💡 Rekomendasi:** Gunakan **Google Gemini** atau **Groq** untuk gratis dengan kualitas bagus!
 
 ---
 
